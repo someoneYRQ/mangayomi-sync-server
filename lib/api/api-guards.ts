@@ -28,10 +28,12 @@ export async function parseJsonBody<T>(
   schema: z.ZodType<T>,
   invalidMessage: string,
   emptyBodyFallback?: unknown,
+  onInvalid?: (error: z.ZodError) => void,
 ): Promise<{ data: T } | NextResponse> {
   const body: unknown = await request.json().catch(() => null);
   const parsed = schema.safeParse(body ?? emptyBodyFallback ?? null);
   if (!parsed.success) {
+    onInvalid?.(parsed.error);
     return NextResponse.json({ error: invalidMessage }, { status: 400 });
   }
   return { data: parsed.data };

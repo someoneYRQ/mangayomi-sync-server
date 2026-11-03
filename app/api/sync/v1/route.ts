@@ -49,6 +49,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     request,
     syncRequestSchema,
     t("invalidRequest"),
+    undefined,
+    (error) => {
+      console.warn("Sync request failed validation", {
+        issueCount: error.issues.length,
+        issues: error.issues.slice(0, 20).map(({ code, path }) => ({
+          code,
+          path: path.join("."),
+        })),
+      });
+    },
   );
   if (parsedBody instanceof NextResponse) return parsedBody;
   const req = parsedBody.data;
