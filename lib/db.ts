@@ -1,13 +1,25 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { attachDatabasePool } from "@vercel/functions";
+import { Pool } from "pg";
 
-// Standard Next.js dev-mode singleton: without caching on `globalThis`, hot reload would open a fresh pool on every edit.
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
+  pool?: Pool;
 };
 
 function createClient(): PrismaClient {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+  let pool = globalForPrisma.pool;
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 5,
+    });
+    if (process.env.VERCEL) attachDatabasePool(pool);
+    globalForPrisma.pool = pool;
+  }
+
+  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 
